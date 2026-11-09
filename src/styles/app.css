@@ -761,6 +761,17 @@ svg {
   pointer-events: none;
 }
 
+/* The text dissolves into the voice filament along the panel's lower edge. */
+.prompter::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 76px;
+  background: linear-gradient(to top, rgba(6, 8, 12, 0.92), rgba(6, 8, 12, 0));
+  pointer-events: none;
+}
+
 .prompter__line {
   position: absolute;
   inset-inline: 0;
@@ -834,32 +845,53 @@ svg {
   }
 }
 
-.meter {
-  position: relative;
-  width: 96px;
-  height: 8px;
-  overflow: hidden;
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.16);
+.voice-readout {
+  gap: 6px;
+  align-items: baseline;
+  padding-block: 5px;
 }
 
-.meter__fill {
+.voice-readout__label {
+  color: var(--amber);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+}
+
+.voice-readout__value {
+  min-width: 3ch;
+  text-align: right;
+  font-size: 15px;
+  font-weight: 800;
+  transition: color 0.15s ease;
+}
+
+.voice-readout__value.is-clipping {
+  color: #fff;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+}
+
+.voice-readout__unit {
+  color: var(--text-2);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.filament {
   position: absolute;
-  inset: 0;
-  background: var(--amber);
-  transform: scaleX(0);
-  transform-origin: left center;
-  transition: transform 0.08s linear;
-}
-
-.meter__fill.is-clipping {
-  background: #fff;
+  left: 0;
+  top: var(--ph);
+  display: block;
+  width: 100%;
+  height: 150px;
+  margin-top: -75px;
+  pointer-events: none;
 }
 
 .hud__notes {
   position: absolute;
   inset-inline: 0;
-  top: calc(var(--ph) + 46px);
+  top: calc(var(--ph) + 72px);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1387,7 +1419,11 @@ svg {
   }
 
   .hud__notes {
-    top: calc(min(var(--ph), 48%) + 46px);
+    top: calc(min(var(--ph), 48%) + 72px);
+  }
+
+  .filament {
+    top: min(var(--ph), 48%);
   }
 }
 

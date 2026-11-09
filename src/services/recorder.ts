@@ -2,7 +2,7 @@ import { pickMimeType } from '../lib/mime';
 import { aspectRatio, centerCrop, decidePipeline, type Aspect, type Pipeline } from '../lib/pipeline';
 
 const VIDEO_BPS = 8_000_000;
-const AUDIO_BPS = 128_000;
+const AUDIO_BPS = 192_000;
 const CHUNK_MS = 1000;
 const KEYFRAME_MS = 2000;
 const CANVAS_FPS = 30;
@@ -54,6 +54,8 @@ class CropCompositor {
 
 export interface RecorderConfig {
   stream: MediaStream;
+  /** The processed voice, or the raw microphone as a fallback. */
+  audioTrack: MediaStreamTrack | undefined;
   video: HTMLVideoElement;
   aspect: Aspect;
   onChunk: (blob: Blob, elapsedMs: number) => void;
@@ -78,14 +80,15 @@ export class TakeRecorder {
   private pausedTotal = 0;
 
   constructor(config: RecorderConfig) {
-    const { stream, video, aspect } = config;
+    const { stream, audioTrack, video, aspect } = config;
     this.pipeline = planRecording(video, aspect);
 
-    let tracks = stream.getTracks();
+    let videoTracks = stream.getVideoTracks();
     if (this.pipeline.mode === 'crop') {
       this.compositor = new CropCompositor(video, this.pipeline.outW, this.pipeline.outH, aspectRatio(aspect));
-      tracks = [...this.compositor.stream.getVideoTracks(), ...stream.getAudioTracks()];
+      videoTracks = this.compositor.stream.getVideoTracks();
     }
+    const tracks = audioTrack ? [...videoTracks, audioTrack] : videoTracks;
 
     const picked = supportedMimeType();
     // Chrome's MP4 muxer only emits data at keyframes, so this bounds what a crash can lose.

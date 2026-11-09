@@ -78,6 +78,8 @@ Presentation clickers and page-turner pedals send Page Up and Page Down, so they
 | Capture stops when the app goes to the background | The take is saved at that point and you get a notice. A take can't continue in the background |
 | The audio context stays suspended without a gesture, and after interruptions | It resumes on any touch and when the app returns |
 | `noiseSuppression` and `autoGainControl` are requests that iOS may ignore | Requested as specified; the level meter shows what is really coming in |
+| A phone can deliver a stereo track with one empty channel, which plays in one ear | The voice chain finds the live channel and sends the same signal to both ears |
+| A suspended audio context would record silence | If it can't be resumed at record time, the raw microphone is recorded instead |
 | Wake Lock has no effect in installed apps before iOS 18.4, and doesn't exist before 16.4 | Tally shows a one-time tip to set Auto-Lock to Never. The usual workaround plays hidden audio, which could affect the microphone, so it is deliberately not used |
 | Orientation can't be locked in Safari | A notice appears if you rotate during a direct recording |
 | A canvas outside the document can stop producing frames | The crop canvas stays attached to the page, at 1×1 px |

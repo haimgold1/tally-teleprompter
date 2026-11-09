@@ -4,6 +4,8 @@ const AUDIO: MediaTrackConstraints = {
   echoCancellation: false,
   noiseSuppression: true,
   autoGainControl: false,
+  channelCount: { ideal: 1 },
+  sampleRate: { ideal: 48000 },
 };
 
 const VIDEO_TIERS: MediaTrackConstraints[] = [

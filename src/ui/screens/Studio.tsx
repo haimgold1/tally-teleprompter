@@ -5,6 +5,7 @@ import { actionForKey } from '../../lib/keymap';
 import type { LevelReading } from '../../lib/levels';
 import { decidePipeline } from '../../lib/pipeline';
 import { isIOS } from '../../lib/platform';
+import { formatLevelDb } from '../../lib/voiceSignal';
 import { clampWpm } from '../../lib/wpm';
 import { PrompterEngine } from '../../services/prompterEngine';
 import { StudioSession, type SessionState } from '../../services/studioSession';
@@ -13,12 +14,15 @@ import { Icon } from '../components/Icon';
 import { toast } from '../components/overlays';
 import { useSettings } from '../hooks';
 import { navigate } from '../router';
+import type { FilamentRenderer } from '../studio/filament';
 import { PrompterPanel } from '../studio/PrompterPanel';
 import { SettingsSheet } from '../studio/SettingsSheet';
+import { VoiceFilament } from '../studio/VoiceFilament';
 
 const DIM_AFTER_MS = 3000;
 const JUMP_BACK_SECONDS = 4;
 const WPM_KEY_STEP = 10;
+const READOUT_INTERVAL_MS = 400;
 
 const INITIAL_STATE: SessionState = { phase: 'starting', countdown: 0, error: null, videoWidth: 0, videoHeight: 0 };
 
@@ -38,7 +42,9 @@ export function Studio({ scriptId }: { scriptId: string }) {
   const video = useRef<HTMLVideoElement>(null);
   const timerText = useRef<HTMLSpanElement>(null);
   const remainingText = useRef<HTMLElement>(null);
-  const meterFill = useRef<HTMLDivElement>(null);
+  const levelReadout = useRef<HTMLSpanElement>(null);
+  const readoutHold = useRef({ max: 0, at: 0 });
+  const filament = useRef<FilamentRenderer | null>(null);
   const dimTimer = useRef(0);
   const autoPausedText = useRef(false);
   const settingsRef = useRef(settings);
@@ -68,10 +74,14 @@ export function Studio({ scriptId }: { scriptId: string }) {
     let mounted = true;
 
     const onLevel = ({ level, clipping, silent }: LevelReading) => {
-      const fill = meterFill.current;
-      if (fill) {
-        fill.style.transform = `scaleX(${level})`;
-        fill.classList.toggle('is-clipping', clipping);
+      filament.current?.setLevel(level, clipping);
+      const hold = readoutHold.current;
+      hold.max = Math.max(hold.max, level);
+      if (levelReadout.current && performance.now() - hold.at >= READOUT_INTERVAL_MS) {
+        levelReadout.current.textContent = formatLevelDb(hold.max);
+        levelReadout.current.classList.toggle('is-clipping', clipping);
+        hold.max = 0;
+        hold.at = performance.now();
       }
       const recording = stateRef.current.phase === 'recording';
       const next: AudioWarning = clipping ? 'clipping' : silent && recording ? 'silent' : null;
@@ -190,6 +200,8 @@ export function Studio({ scriptId }: { scriptId: string }) {
     return () => window.removeEventListener('keydown', onKey);
   }, [engine, stepWpm, toggleRecord]);
 
+  const readBands = useCallback((out: Float32Array) => session.current?.readBands(out) ?? false, []);
+
   const onRemaining = useCallback((seconds: number) => {
     if (remainingText.current) remainingText.current.textContent = formatClock(Math.ceil(seconds));
   }, []);
@@ -229,6 +241,8 @@ export function Studio({ scriptId }: { scriptId: string }) {
         />
       )}
 
+      {phase !== 'error' && <VoiceFilament live={phase === 'recording'} readBands={readBands} renderer={filament} />}
+
       {phase !== 'error' && phase !== 'starting' && (
         <div class="hud">
           {isLive ? (
@@ -244,10 +258,12 @@ export function Studio({ scriptId }: { scriptId: string }) {
               {plan ? `${plan.outW}×${plan.outH}` : ''}
             </div>
           )}
-          <div class="hud__pill" aria-label="Microphone level">
-            <div class="meter">
-              <div class="meter__fill" ref={meterFill} />
-            </div>
+          <div class="hud__pill voice-readout" role="img" aria-label="Microphone level in decibels">
+            <span class="voice-readout__label">MIC</span>
+            <span class="voice-readout__value" ref={levelReadout}>
+              —
+            </span>
+            <span class="voice-readout__unit">dB</span>
           </div>
         </div>
       )}

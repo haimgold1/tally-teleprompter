@@ -3,9 +3,9 @@ import type { LevelReading } from '../lib/levels';
 import { decidePipeline, type Aspect } from '../lib/pipeline';
 import { isIOS, wakeLockIsReliable } from '../lib/platform';
 import { createTake, deleteTake, storageUsage, TakeWriter, updateTake, type Take } from '../storage/takes';
-import { AudioMeter } from './audioMeter';
 import { attachPreview, cameraSupport, openCamera, stopStream } from './camera';
 import { grabThumbnail, supportedMimeType, TakeRecorder } from './recorder';
+import { VoiceChain } from './voiceChain';
 import { ScreenAwake } from './wakeLock';
 
 export type Phase = 'starting' | 'ready' | 'countdown' | 'recording' | 'paused' | 'saving' | 'error';
@@ -49,13 +49,13 @@ export class StudioSession {
   private finishing = false;
   private aspect: Aspect = '9:16';
   private readonly awake = new ScreenAwake();
-  private readonly meter: AudioMeter;
+  private readonly voice: VoiceChain;
 
   constructor(
     private readonly scriptId: string,
     private readonly hooks: SessionHooks,
   ) {
-    this.meter = new AudioMeter(hooks.onLevel);
+    this.voice = new VoiceChain(hooks.onLevel);
     document.addEventListener('visibilitychange', this.onVisibility);
   }
 
@@ -93,7 +93,7 @@ export class StudioSession {
       await attachPreview(video, stream);
       if (this.closed) return;
       video.addEventListener('resize', this.onVideoResize);
-      this.meter.start(stream);
+      this.voice.start(stream);
       await this.awake.enable();
       if (!wakeLockIsReliable() && isIOS()) this.hooks.onNotice(NO_WAKE_LOCK_NOTICE);
       this.update({ phase: 'ready', videoWidth: video.videoWidth, videoHeight: video.videoHeight });
@@ -104,13 +104,17 @@ export class StudioSession {
 
   /** Call on any touch: iOS needs a gesture to run the audio context. */
   userGesture(): void {
-    void this.meter.resume();
+    void this.voice.resume();
+  }
+
+  readBands(out: Float32Array): boolean {
+    return this.voice.readBands(out);
   }
 
   startCountdown(aspect: Aspect): void {
     if (this.state.phase !== 'ready') return;
     this.aspect = aspect;
-    void this.meter.resume();
+    void this.voice.resume();
     void navigator.storage?.persist?.().catch(() => undefined);
     this.update({ phase: 'countdown', countdown: COUNTDOWN_FROM });
 
@@ -154,8 +158,10 @@ export class StudioSession {
       const writer = new TakeWriter(take, this.onWriteFailure);
       this.writer = writer;
 
+      const audioTrack = await this.voice.recordTrack(stream);
       const recorder = new TakeRecorder({
         stream,
+        audioTrack,
         video,
         aspect: this.aspect,
         onChunk: (blob, elapsed) => writer.append(blob, elapsed),
@@ -262,7 +268,7 @@ export class StudioSession {
       return;
     }
     if (this.closed || !this.video || this.state.phase === 'starting' || this.state.phase === 'error') return;
-    void this.meter.resume();
+    void this.voice.resume();
     const live = this.stream?.getVideoTracks().some((track) => track.readyState === 'live');
     if (live) void this.video.play().catch(() => undefined);
     else if (!this.recorder) void this.reopen();
@@ -290,7 +296,7 @@ export class StudioSession {
   private releaseCamera(): void {
     this.video?.removeEventListener('resize', this.onVideoResize);
     this.stream?.getVideoTracks()[0]?.removeEventListener('ended', this.onTrackEnded);
-    this.meter.stop();
+    this.voice.stop();
     this.awake.disable();
     stopStream(this.stream);
     this.stream = null;
