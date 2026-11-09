@@ -1,0 +1,24 @@
+{
+  "name": "tally-teleprompter",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "assets": "python3 scripts/generate-assets.py"
+  },
+  "dependencies": {
+    "@fontsource-variable/assistant": "^5.2.0",
+    "@fontsource-variable/rubik": "^5.2.0",
+    "preact": "^10.26.0"
+  },
+  "devDependencies": {
+    "@preact/preset-vite": "^2.10.0",
+    "typescript": "^5.8.0",
+    "vite": "^7.0.0",
+    "vitest": "^3.2.0"
+  }
+}
