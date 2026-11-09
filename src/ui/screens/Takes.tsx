@@ -74,9 +74,9 @@ export function Takes({ scriptId }: { scriptId: string }) {
                     <div class="take__title">Take {take.number}</div>
                     <div class="meta">
                       <span>{formatClock(take.durationMs / 1000)}</span>
-                      <span>{formatDate(take.createdAt)}</span>
                       <bdi>{formatBytes(take.size)}</bdi>
                     </div>
+                    <div class="take__date">{formatDate(take.createdAt)}</div>
                   </button>
                   <div class="take__actions">
                     <button

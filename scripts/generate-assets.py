@@ -5,10 +5,12 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFilter
 
 ROOT = Path(__file__).resolve().parent.parent / "public"
-BG_TOP = (18, 23, 33)
-BG_BOTTOM = (6, 8, 12)
-AMBER = (255, 176, 58)
-INK = (238, 242, 248)
+BG_TOP = (28, 22, 64)
+BG_BOTTOM = (7, 7, 15)
+BLUE = (77, 125, 255)
+VIOLET = (138, 92, 255)
+ORCHID = (192, 107, 255)
+INK = (242, 243, 251)
 SS = 4  # supersampling factor
 
 # iOS splash screens are matched by exact device size, in portrait pixels.
@@ -27,22 +29,22 @@ def gradient(w, h):
 
 
 def draw_mark(canvas, cx, cy, unit):
-    """Tally light above left-aligned prompter lines, with one amber reading line."""
+    """Tally light above left-aligned prompter lines, with one gradient reading line."""
     glow = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
     r = unit * 0.34
     tally_y = cy - unit * 1.42
     ImageDraw.Draw(glow).ellipse(
-        [cx - r * 1.5, tally_y - r * 1.5, cx + r * 1.5, tally_y + r * 1.5], fill=(*AMBER, 170)
+        [cx - r * 1.5, tally_y - r * 1.5, cx + r * 1.5, tally_y + r * 1.5], fill=(*VIOLET, 190)
     )
     canvas.alpha_composite(glow.filter(ImageFilter.GaussianBlur(unit * 0.42)))
 
     d = ImageDraw.Draw(canvas)
-    d.ellipse([cx - r, tally_y - r, cx + r, tally_y + r], fill=AMBER)
+    d.ellipse([cx - r, tally_y - r, cx + r, tally_y + r], fill=VIOLET)
 
     half = unit * 1.62
     bar = unit * 0.27
     lines = [
-        (cy - unit * 0.42, 1.0, (*AMBER, 255)),
+        (cy - unit * 0.42, 1.0, None),
         (cy + unit * 0.3, 0.8, (*INK, 235)),
         (cy + unit * 1.02, 0.56, (*INK, 150)),
     ]
@@ -51,7 +53,22 @@ def draw_mark(canvas, cx, cy, unit):
     for y, width, color in lines:
         left = cx - half
         right = left + half * 2 * width
-        ld.rounded_rectangle([left, y - bar / 2, right, y + bar / 2], radius=bar / 2, fill=color)
+        box = [left, y - bar / 2, right, y + bar / 2]
+        if color is not None:
+            ld.rounded_rectangle(box, radius=bar / 2, fill=color)
+            continue
+        # The reading line carries the blue-to-orchid signal gradient.
+        mask = Image.new("L", canvas.size, 0)
+        ImageDraw.Draw(mask).rounded_rectangle(box, radius=bar / 2, fill=255)
+        ramp = Image.new("RGBA", canvas.size)
+        px = ramp.load()
+        span = max(right - left, 1)
+        for x in range(int(left), int(right) + 1):
+            t = (x - left) / span
+            c = tuple(round(a + (b - a) * t) for a, b in zip(BLUE, ORCHID)) + (255,)
+            for yy in range(int(box[1]), int(box[3]) + 1):
+                px[x, yy] = c
+        layer.paste(ramp, (0, 0), mask)
     canvas.alpha_composite(layer)
 
 

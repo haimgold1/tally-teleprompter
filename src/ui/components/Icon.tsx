@@ -34,7 +34,7 @@ export function Icon({ name, size = 24 }: { name: IconName; size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
       {outline ? (
-        <path d={outline} fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+        <path d={outline} fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
       ) : (
         <path d={(SOLID as Record<string, string>)[name]} fill="currentColor" />
       )}

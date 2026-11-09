@@ -68,13 +68,14 @@ export function Library() {
   };
 
   const isEmpty = scripts?.length === 0;
+  const longest = Math.max(1, ...(scripts ?? []).map((script) => countWords(script.body)));
 
   return (
     <>
       <header class="topbar">
         <div class="brand">
           <span class="tally" />
-          <h1 style={{ font: 'inherit' }}>Tally</h1>
+          <span>Tally</span>
         </div>
       </header>
 
@@ -94,12 +95,16 @@ export function Library() {
       {scripts && !isEmpty && (
         <div class="scroll">
           <div class="content">
+            <div class="hero">
+              <h1 class="hero__title">Scripts</h1>
+              <span class="hero__count">{scripts.length}</span>
+            </div>
             <ul class="script-list">
-              {scripts.map((script) => {
+              {scripts.map((script, index) => {
                 const words = countWords(script.body);
                 const takes = takeCounts[script.id] ?? 0;
                 return (
-                  <li class="card" key={script.id}>
+                  <li class="card" key={script.id} style={{ '--i': Math.min(index, 8) }}>
                     <button class="card__main" onClick={() => navigate(`studio/${script.id}`)}>
                       <h2 class="card__title" dir="auto">
                         {script.title || 'Untitled'}
@@ -108,6 +113,9 @@ export function Library() {
                         <span>{words} {words === 1 ? 'word' : 'words'}</span>
                         <span>{formatReadTime(readSeconds(words, wpm))}</span>
                         <span>{formatDate(script.updatedAt)}</span>
+                      </div>
+                      <div class="card__length">
+                        <span style={{ width: `${Math.max(4, (words / longest) * 100)}%` }} />
                       </div>
                     </button>
                     <div class="card__actions">

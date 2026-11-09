@@ -3,9 +3,10 @@ import { BAND_COUNT } from '../../lib/voiceSignal';
 type Rgb = readonly [number, number, number];
 
 const STEEL: Rgb = [150, 176, 214];
-const AMBER: Rgb = [255, 170, 48];
-const GOLD: Rgb = [255, 214, 140];
-const HOT: Rgb = [255, 243, 224];
+const BLUE: Rgb = [66, 124, 255];
+const VIOLET: Rgb = [140, 88, 255];
+const LILAC: Rgb = [206, 190, 255];
+const HOT: Rgb = [240, 236, 255];
 const WHITE: Rgb = [255, 255, 255];
 
 const FRAME_MS = 32; // about 30 fps, to leave the phone's power for the video encoder
@@ -34,7 +35,7 @@ const rgba = (c: Rgb, alpha: number): string => `rgba(${c[0] | 0},${c[1] | 0},${
  * The voice ribbon: a twisting band of light threads on the edge of the
  * prompter panel. Its outline is the real spectrum of the voice (low
  * frequencies at the center, high at the tips) and two mirrored orbs show the
- * level against a scale. Steel at rest, it ignites amber when recording starts
+ * level against a scale. Steel at rest, it ignites violet when recording starts
  * and burns white if the sound is too hot. Drawn on a DOM canvas, so it never
  * reaches the recording.
  */
@@ -169,8 +170,8 @@ export class FilamentRenderer {
     const time = this.reducedMotion ? 0 : now / 1000;
     const cx = width / 2;
     const cy = height / 2;
-    const color = mix(mix(STEEL, AMBER, ignition), WHITE, heat);
-    const shine = mix(mix(STEEL, GOLD, ignition), WHITE, heat);
+    const color = mix(mix(STEEL, VIOLET, ignition), WHITE, heat);
+    const shine = mix(mix(STEEL, LILAC, ignition), WHITE, heat);
     const core = mix(mix(STEEL, HOT, 0.5 + 0.5 * ignition), WHITE, heat);
     const presence = 0.45 + 0.55 * Math.min(1, this.level * 1.3);
 
@@ -181,12 +182,13 @@ export class FilamentRenderer {
     this.drawBloom(cx, cy, color);
 
     const across = (stop: Rgb, alpha: number): CanvasGradient => {
+      const tip = mix(stop, BLUE, 0.85 * ignition * (1 - heat));
       const gradient = ctx.createLinearGradient(0, 0, width, 0);
-      gradient.addColorStop(0, rgba(stop, 0));
-      gradient.addColorStop(0.14, rgba(stop, alpha * 0.45));
+      gradient.addColorStop(0, rgba(tip, 0));
+      gradient.addColorStop(0.14, rgba(tip, alpha * 0.55));
       gradient.addColorStop(0.5, rgba(stop, alpha));
-      gradient.addColorStop(0.86, rgba(stop, alpha * 0.45));
-      gradient.addColorStop(1, rgba(stop, 0));
+      gradient.addColorStop(0.86, rgba(tip, alpha * 0.55));
+      gradient.addColorStop(1, rgba(tip, 0));
       return gradient;
     };
 
@@ -325,11 +327,11 @@ export class FilamentRenderer {
       const head = cx + side * eased * (width / 2 + 90);
       const tail = head - side * 190;
       const streak = ctx.createLinearGradient(tail, 0, head, 0);
-      streak.addColorStop(0, rgba(AMBER, 0));
+      streak.addColorStop(0, rgba(VIOLET, 0));
       streak.addColorStop(1, rgba(HOT, fade));
       ctx.fillStyle = streak;
       ctx.fillRect(Math.min(tail, head), cy - 1.5, 190, 3);
-      this.orb(head, cy, 58, AMBER, 0.7 * fade);
+      this.orb(head, cy, 58, VIOLET, 0.7 * fade);
       this.orb(head, cy, 12, HOT, fade);
     }
   }
